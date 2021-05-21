@@ -1,0 +1,23 @@
+{
+  "name": "telegram-bot-ftx",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pawiromitchel/telegram-bot-ftx.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pawiromitchel/telegram-bot-ftx/issues"
+  },
+  "homepage": "https://github.com/pawiromitchel/telegram-bot-ftx#readme",
+  "dependencies": {
+    "ftx-api-rest": "^0.0.7"
+  }
+}
