@@ -1,6 +1,6 @@
 const FTXRest = require('ftx-api-rest');
+const TelegramBot = require('node-telegram-bot-api');
 const CONFIG = require('./config');
-
 const ftx = new FTXRest(CONFIG.FTX_API)
 
 /**
@@ -49,7 +49,6 @@ function convertString(string) {
         default:
             break;
     }
-
     return string;
 }
 
@@ -63,7 +62,7 @@ async function marketOrder(pair, side) {
     pair = convertString(pair);
     let size = await calculatePortfolio(CONFIG.ORDER_SIZE, pair);
 
-    ftx.request({
+    return ftx.request({
         method: 'POST',
         path: '/orders',
         data: {
@@ -73,7 +72,7 @@ async function marketOrder(pair, side) {
             type: 'market',
             price: null
         }
-    }).then(console.log).catch(err => console.log(err));
+    });
 }
 
 /**
@@ -108,9 +107,28 @@ async function closeOrders() {
     }
 }
 
-// marketOrder('btc', 'buy');
-// marketOrder('eth', 'buy');
+const token = CONFIG.TELEGRAM_BOT_TOKEN;
+// Create a bot that uses 'polling' to fetch new updates
+const bot = new TelegramBot(token, { polling: true });
+bot.on("polling_error", (msg) => console.log(msg));
+bot.on('message', (msg) => {
+    // get ID from the one who chats
+    const chatId = msg.chat.id;
+    const text = msg.text ? msg.text: '';
 
-// calculatePortfolio(10, 'eth');
+    if(text.includes('buy') || text.includes('sell')){
+        let order = text.split(' ');
+        // only exec when there's a pair given
+        if(order[1]) {
+            // create the order
+            let type = order[0];
+            let pair = order[1];
+            marketOrder(pair, type).then(res => console.log(res));
+        }
+    }
 
-closeOrders()
+    if(text === 'close'){
+        bot.sendMessage(chatId, `Closing order(s)`);
+        closeOrders();
+    }
+});
