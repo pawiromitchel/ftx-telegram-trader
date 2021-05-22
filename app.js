@@ -156,19 +156,19 @@ bot.on('message', async (msg) => {
         }
     }
 
-    if (text === '/balance') {
+    if (text.includes('balance')) {
         let accountInfo = await getBalance();
         bot.sendMessage(chatId, `Collateral: ${accountInfo.collateral}\nAccount Value: ${accountInfo.totalAccountValue}\nTotalPositionSize: ${accountInfo.totalPositionSize}`);
     }
 
-    if (text === '/open') {
+    if (text.includes('open')) {
         let orders = await openOrders();
         orders.forEach(order => {
             bot.sendMessage(chatId, `Pair: ${order.future} ${order.side}\nEntryPrice: ${order.entryPrice}\nPnL: ${order.unrealizedPnl}\nLiq Price: ${order.estimatedLiquidationPrice}`);
         });
     }
 
-    if (text === '/close') {
+    if (text.includes('close')) {
         bot.sendMessage(chatId, `Closing all orders`);
         closeOrders();
     }
