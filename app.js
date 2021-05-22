@@ -140,6 +140,10 @@ async function calculateProfit(entry, mark, side){
     return (((side === 'buy' ? mark / entry : entry / mark) * 100) - 100).toFixed(3)
 }
 
+function reCalculateOrderSize() {
+    CONFIG.ORDER_SIZE = 100 * (CONFIG.DEGEN ? 5 : 1);
+}
+
 const token = CONFIG.TELEGRAM_BOT_TOKEN;
 // Create a bot that uses 'polling' to fetch new updates
 const bot = new TelegramBot(token, { polling: true });
@@ -148,6 +152,21 @@ bot.on('message', async (msg) => {
     // get ID from the one who chats
     const chatId = msg.chat.id;
     const text = msg.text ? msg.text : '';
+
+    if(text.includes('/info')) {
+        bot.sendMessage(chatId, `::Info::\nOrder Size: ${CONFIG.ORDER_SIZE}%\nDEGEN: ${CONFIG.DEGEN}`);
+    }
+
+    if(text.includes('/degen')) {
+        if(CONFIG.DEGEN) {
+            CONFIG.DEGEN = false;
+            bot.sendMessage(chatId, `Degen Mode OFF`);
+        } else {
+            CONFIG.DEGEN = true;
+            bot.sendMessage(chatId, `Degen Mode ON\nOrder size will increase with 5x!`);
+        }
+        reCalculateOrderSize();
+    }
 
     if(text.includes('/long') || text.includes('/short')) {
         text = text.replace('long', 'buy');
@@ -162,7 +181,7 @@ bot.on('message', async (msg) => {
             let type = order[0].replace('/', '');
             let pair = order[1];
             marketOrder(pair, type);
-            bot.sendMessage(chatId, `${type} order placed for ${pair} at price ${await getPrice(pair)}`);
+            bot.sendMessage(chatId, `::Order::\n${type} order placed for ${pair} at price ${await getPrice(pair)}`);
         } else {
             bot.sendMessage(chatId, 'Please specify the asset (eth or btc) kind sir, I am not that smart you know');
         }
@@ -170,11 +189,12 @@ bot.on('message', async (msg) => {
 
     if (text.includes('/balance')) {
         let accountInfo = await getBalance();
-        bot.sendMessage(chatId, `Collateral: ${accountInfo.collateral}\nAccount Value: ${accountInfo.totalAccountValue}\nTotalPositionSize: ${accountInfo.totalPositionSize}\nLeverage: ${accountInfo.leverage}`);
+        bot.sendMessage(chatId, `::Balance::\nCollateral: ${accountInfo.collateral}\nAccount Value: ${accountInfo.totalAccountValue}\nTotalPositionSize: ${accountInfo.totalPositionSize}\nLeverage: ${accountInfo.leverage}`);
     }
 
     if (text.includes('/open')) {
         let orders = await openOrders();
+        bot.sendMessage(chatId, `::Open Orders::`);
         orders.forEach(async order => {
             let price = await getPrice(order.future);
             bot.sendMessage(chatId, `Pair: ${order.future} ${order.side}\nAvgPrice: ${order.recentAverageOpenPrice}\nSize: ${order.size}\nPnL: ${order.unrealizedPnl}\nLiq Price: ${order.estimatedLiquidationPrice}\n\nMarkPrice: ${price}\nProfit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}`);
@@ -184,6 +204,7 @@ bot.on('message', async (msg) => {
     if (text.includes('/close')) {
         bot.sendMessage(chatId, `Closing all orders`);
         let orders = await openOrders();
+        bot.sendMessage(chatId, `::Closing Orders::`);
         orders.forEach(async order => {
             let price = await getPrice(order.future);
             bot.sendMessage(chatId, `Closing ${order.future} ${order.side}\nEntryPrice: ${order.recentAverageOpenPrice}\nMarkPrice: ${await getPrice(order.future)}\nProfit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}`);
