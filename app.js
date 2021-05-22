@@ -149,6 +149,11 @@ bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text ? msg.text : '';
 
+    if(text.includes('/long') || text.includes('/short')) {
+        text = text.replace('long', 'buy');
+        text = text.replace('short', 'sell');
+    }
+
     if (text.includes('/buy') || text.includes('/sell')) {
         let order = text.split(' ');
         // only exec when there's a pair given
