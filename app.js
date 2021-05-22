@@ -165,7 +165,7 @@ bot.on('message', async (msg) => {
 
     if (text.includes('/balance')) {
         let accountInfo = await getBalance();
-        bot.sendMessage(chatId, `Collateral: ${accountInfo.collateral}\nAccount Value: ${accountInfo.totalAccountValue}\nTotalPositionSize: ${accountInfo.totalPositionSize}`);
+        bot.sendMessage(chatId, `Collateral: ${accountInfo.collateral}\nAccount Value: ${accountInfo.totalAccountValue}\nTotalPositionSize: ${accountInfo.totalPositionSize}\nLeverage: ${accountInfo.leverage}`);
     }
 
     if (text.includes('/open')) {
