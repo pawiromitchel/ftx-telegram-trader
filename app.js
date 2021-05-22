@@ -197,7 +197,7 @@ bot.on('message', async (msg) => {
         bot.sendMessage(chatId, `::Open Orders::`);
         orders.forEach(async order => {
             let price = await getPrice(order.future);
-            bot.sendMessage(chatId, `Pair: ${order.future} ${order.side}\nAvgPrice: ${order.recentAverageOpenPrice}\nSize: ${order.size}\nPnL: ${order.unrealizedPnl}\nLiq Price: ${order.estimatedLiquidationPrice}\n\nMarkPrice: ${price}\nProfit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}`);
+            bot.sendMessage(chatId, `Pair: ${order.future} ${order.side}\nAvgPrice: ${order.recentAverageOpenPrice}\nSize: ${order.size}\nPnL: ${order.realizedPnl}\nLiq Price: ${order.estimatedLiquidationPrice}\n\nMarkPrice: ${price}\nProfit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}`);
         });
     }
 
@@ -207,7 +207,7 @@ bot.on('message', async (msg) => {
         bot.sendMessage(chatId, `::Closing Orders::`);
         orders.forEach(async order => {
             let price = await getPrice(order.future);
-            bot.sendMessage(chatId, `Closing ${order.future} ${order.side}\nEntryPrice: ${order.recentAverageOpenPrice}\nMarkPrice: ${await getPrice(order.future)}\nProfit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}`);
+            bot.sendMessage(chatId, `Closing ${order.future} ${order.side}\nEntryPrice: ${order.recentAverageOpenPrice}\nMarkPrice: ${await getPrice(order.future)}\nPnL: ${order.realizedPnl}\nProfit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}`);
         });
         closeOrders();
     }
