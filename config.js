@@ -7,4 +7,4 @@ const API = {
 // order size in percentage of the wallet balance
 const ORDER_SIZE = 10;
 
-module.exports = API;
+module.exports = { API, ORDER_SIZE };
