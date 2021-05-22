@@ -178,11 +178,11 @@ bot.on('message', async (msg) => {
 
     if (text.includes('/close')) {
         bot.sendMessage(chatId, `Closing all orders`);
-        closeOrders();
         let orders = await openOrders();
         orders.forEach(async order => {
             let price = await getPrice(order.future);
-            bot.sendMessage(chatId, `Closing ${order.future} ${order.side}\nEntryPrice: ${order.entryPrice}\nCurrentPrice: ${await getPrice(order.future)}`);
+            bot.sendMessage(chatId, `Closing ${order.future} ${order.side}\nEntryPrice: ${order.recentAverageOpenPrice}\nMarkPrice: ${await getPrice(order.future)}\nProfit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}`);
         });
+        closeOrders();
     }
 });
