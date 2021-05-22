@@ -1,5 +1,10 @@
-export const API = {
-    key: 'x',
-    secret: 'y',
-    subaccount: 'z'
+const API = {
+    key: '',
+    secret: '',
+    subaccount: ''
 }
+
+// order size in percentage of the wallet balance
+const ORDER_SIZE = 10;
+
+module.exports = API;
