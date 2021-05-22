@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/pawiromitchel/telegram-bot-ftx#readme",
   "dependencies": {
-    "ftx-api-rest": "^0.0.7"
+    "ftx-api-rest": "^0.0.7",
+    "node-telegram-bot-api": "^0.53.0"
   }
 }

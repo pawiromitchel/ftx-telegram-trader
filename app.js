@@ -1,7 +1,7 @@
 const FTXRest = require('ftx-api-rest');
 const CONFIG = require('./config');
 
-const ftx = new FTXRest(CONFIG.API)
+const ftx = new FTXRest(CONFIG.FTX_API)
 
 /**
  * This will calculate the order size based on the portfolio balance
