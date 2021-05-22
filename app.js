@@ -154,7 +154,7 @@ bot.on('message', async (msg) => {
     const text = msg.text ? msg.text : '';
 
     if(text.includes('/info')) {
-        bot.sendMessage(chatId, `::Info::\nOrder Size: ${CONFIG.ORDER_SIZE}%\nDEGEN: ${CONFIG.DEGEN}`);
+        bot.sendMessage(chatId, `::Info::\nOrder Size: ${CONFIG.ORDER_SIZE}% of Collateral Balance\nDEGEN: ${CONFIG.DEGEN}`);
     }
 
     if(text.includes('/degen')) {
