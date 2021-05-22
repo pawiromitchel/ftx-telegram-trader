@@ -6,16 +6,31 @@ const ftx = new FTXRest(CONFIG)
 /**
  * This will calculate the order size based on the portfolio balance
  * @param {number} percentage how big the order has to be in percentage
+ * @param {string} pair eth or btc
  */
-async function calculatePortfolio(percentage) {
+async function calculatePortfolio(percentage, pair) {
+    // get account info
     let request = ftx.request({
         method: 'GET',
-        path: '/wallet/balances'
+        path: '/account'
     })
-
     let result = await request;
 
-    console.log(result)
+    // get market rates
+    pair = convertString(pair);
+    let request2 = ftx.request({
+        method: 'GET',
+        path: '/markets/' + pair
+    })
+    let result2 = await request2;
+    let price = result2.result.price;
+    
+    // how much free collateral does the account have
+    let freeCollateral = result.result.freeCollateral;
+    // calculate the asset amount size of the order
+    let orderSizePair = ((percentage / 100) * freeCollateral) / price;
+
+    return orderSizePair;
 }
 
 function convertString(string) {
@@ -87,6 +102,6 @@ async function closeOrders() {
 
 // marketOrder('btc', 'buy', 0.0001);
 
-// calculatePortfolio()
+calculatePortfolio(10, 'eth');
 
 // closeOrders()
