@@ -140,6 +140,19 @@ async function calculateProfit(entry, mark, side){
     return (((side === 'buy' ? mark / entry : entry / mark) * 100) - 100).toFixed(3)
 }
 
+async function fundingRate(pair) {
+    let request = ftx.request({
+        method: 'GET',
+        path: '/funding_rates',
+        data: {
+            future: pair
+        }
+    });
+
+    let result = await request;
+    return result.result[0].rate;
+}
+
 function reCalculateOrderSize() {
     CONFIG.ORDER_SIZE = 100 * (CONFIG.DEGEN ? 5 : 1);
 }
@@ -154,7 +167,7 @@ bot.on('message', async (msg) => {
     const text = msg.text ? msg.text : '';
 
     if(text.includes('/info')) {
-        bot.sendMessage(chatId, `::Info::\nOrder Size: ${CONFIG.ORDER_SIZE}% of Collateral Balance\nDEGEN: ${CONFIG.DEGEN}`);
+        bot.sendMessage(chatId, `::Info::\nOrder Size: ${CONFIG.ORDER_SIZE}% of Balance\nDEGEN: ${CONFIG.DEGEN}`);
     }
 
     if(text.includes('/degen')) {
@@ -189,7 +202,7 @@ bot.on('message', async (msg) => {
 
     if (text.includes('/balance')) {
         let accountInfo = await getBalance();
-        bot.sendMessage(chatId, `::Balance::\nCollateral: ${accountInfo.collateral}\nAccount Value: ${accountInfo.totalAccountValue}\nTotalPositionSize: ${accountInfo.totalPositionSize}\nLeverage: ${accountInfo.leverage}`);
+        bot.sendMessage(chatId, `::Balance::\nCollateral: ${(accountInfo.collateral).toFixed(2)} USD\nAccount Value: ${(accountInfo.totalAccountValue).toFixed(2)} USD\nMargin Fraction: ${(accountInfo.marginFraction * 100).toFixed(2)}%\nTotalPositionSize: ${(accountInfo.totalPositionSize).toFixed(2)}\nLeverage: ${accountInfo.leverage}`);
     }
 
     if (text.includes('/open')) {
@@ -197,12 +210,11 @@ bot.on('message', async (msg) => {
         bot.sendMessage(chatId, `::Open Orders::`);
         orders.forEach(async order => {
             let price = await getPrice(order.future);
-            bot.sendMessage(chatId, `Pair: ${order.future} ${order.side}\nAvgPrice: ${order.recentAverageOpenPrice}\nSize: ${order.size}\nPnL: ${order.realizedPnl}\nLiq Price: ${order.estimatedLiquidationPrice}\n\nMarkPrice: ${price}\nProfit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}`);
+            bot.sendMessage(chatId, `Pair: ${order.future} ${order.side}\nFunding Rate: ${await fundingRate(order.future)}\nAvgPrice: ${order.recentAverageOpenPrice}\nSize: ${order.size}\nPnL: ${order.realizedPnl}\nLiq Price: ${order.estimatedLiquidationPrice}\n\nMarkPrice: ${price}\nProfit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}`);
         });
     }
 
     if (text.includes('/close')) {
-        bot.sendMessage(chatId, `Closing all orders`);
         let orders = await openOrders();
         bot.sendMessage(chatId, `::Closing Orders::`);
         orders.forEach(async order => {
