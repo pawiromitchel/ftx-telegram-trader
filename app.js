@@ -172,7 +172,7 @@ bot.on('message', async (msg) => {
         let orders = await openOrders();
         orders.forEach(async order => {
             let price = await getPrice(order.future);
-            bot.sendMessage(chatId, `Pair: ${order.future} ${order.side}\nAvgPrice: ${order.recentAverageOpenPrice}\nPnL: ${order.unrealizedPnl}\nLiq Price: ${order.estimatedLiquidationPrice}\n\nMarkPrice: ${price}\nProfit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}`);
+            bot.sendMessage(chatId, `Pair: ${order.future} ${order.side}\nAvgPrice: ${order.recentAverageOpenPrice}\nSize: ${order.size}\nPnL: ${order.unrealizedPnl}\nLiq Price: ${order.estimatedLiquidationPrice}\n\nMarkPrice: ${price}\nProfit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}`);
         });
     }
 
