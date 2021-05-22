@@ -1,7 +1,7 @@
 const FTXRest = require('ftx-api-rest');
 const CONFIG = require('./config');
 
-const ftx = new FTXRest(CONFIG)
+const ftx = new FTXRest(CONFIG.API)
 
 /**
  * This will calculate the order size based on the portfolio balance
@@ -33,6 +33,11 @@ async function calculatePortfolio(percentage, pair) {
     return orderSizePair;
 }
 
+/**
+ * This function will convert user into into the right contract of the Exchange
+ * @param {string} string input command
+ * @returns converted string
+ */
 function convertString(string) {
     switch (string) {
         case 'eth':
@@ -54,12 +59,15 @@ function convertString(string) {
  * @param {string} side buy or sell
  * @param {string} size size of the order
  */
-function marketOrder(pair, side, size) {
+async function marketOrder(pair, side) {
+    pair = convertString(pair);
+    let size = await calculatePortfolio(CONFIG.ORDER_SIZE, pair);
+
     ftx.request({
         method: 'POST',
         path: '/orders',
         data: {
-            market: convertString(pair),
+            market: pair,
             size: size,
             side: side,
             type: 'market',
@@ -100,8 +108,9 @@ async function closeOrders() {
     }
 }
 
-// marketOrder('btc', 'buy', 0.0001);
+// marketOrder('btc', 'buy');
+// marketOrder('eth', 'buy');
 
-calculatePortfolio(10, 'eth');
+// calculatePortfolio(10, 'eth');
 
-// closeOrders()
+closeOrders()
