@@ -99,7 +99,10 @@ async function marketOrder(pair, side) {
 async function openOrders() {
     let request = ftx.request({
         method: 'GET',
-        path: '/positions'
+        path: '/positions',
+        data: {
+            showAvgPrice: true
+        }
     });
 
     let result = await request;
@@ -133,6 +136,10 @@ async function closeOrders() {
     }
 }
 
+async function calculateProfit(entry, mark, side){
+    return (((side === 'buy' ? mark / entry : entry / mark) * 100) - 100).toFixed(3)
+}
+
 const token = CONFIG.TELEGRAM_BOT_TOKEN;
 // Create a bot that uses 'polling' to fetch new updates
 const bot = new TelegramBot(token, { polling: true });
@@ -163,8 +170,9 @@ bot.on('message', async (msg) => {
 
     if (text.includes('/open')) {
         let orders = await openOrders();
-        orders.forEach(order => {
-            bot.sendMessage(chatId, `Pair: ${order.future} ${order.side}\nEntryPrice: ${order.entryPrice}\nPnL: ${order.unrealizedPnl}\nLiq Price: ${order.estimatedLiquidationPrice}`);
+        orders.forEach(async order => {
+            let price = await getPrice(order.future);
+            bot.sendMessage(chatId, `Pair: ${order.future} ${order.side}\nAvgPrice: ${order.recentAverageOpenPrice}\nPnL: ${order.unrealizedPnl}\nLiq Price: ${order.estimatedLiquidationPrice}\n\nMarkPrice: ${price}\nProfit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}`);
         });
     }
 
@@ -172,8 +180,9 @@ bot.on('message', async (msg) => {
         bot.sendMessage(chatId, `Closing all orders`);
         closeOrders();
         let orders = await openOrders();
-        orders.forEach(order => {
-            bot.sendMessage(chatId, `Closing ${order.future} ${order.side}\nEntryPrice: ${order.entryPrice}\nCurrentPrice: ${getPrice(order.future)}`);
+        orders.forEach(async order => {
+            let price = await getPrice(order.future);
+            bot.sendMessage(chatId, `Closing ${order.future} ${order.side}\nEntryPrice: ${order.entryPrice}\nCurrentPrice: ${await getPrice(order.future)}`);
         });
     }
 });
