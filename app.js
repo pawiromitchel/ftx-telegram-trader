@@ -164,7 +164,7 @@ bot.on("polling_error", (msg) => console.log(msg));
 bot.on('message', async (msg) => {
     // get ID from the one who chats
     const chatId = msg.chat.id;
-    const text = msg.text ? msg.text : '';
+    let text = msg.text ? msg.text : '';
 
     if(text.includes('/info')) {
         bot.sendMessage(chatId, `::Info::\nOrder Size: ${CONFIG.ORDER_SIZE}% of Balance\nDEGEN: ${CONFIG.DEGEN}`);
