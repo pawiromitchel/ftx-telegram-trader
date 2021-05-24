@@ -80,7 +80,7 @@ function convertString(string) {
  */
 async function marketOrder(API_CONNECTION, pair, side) {
     pair = convertString(pair);
-    let size = await calculatePortfolio(CONFIG.ORDER_SIZE, pair);
+    let size = await calculatePortfolio(API_CONNECTION, CONFIG.ORDER_SIZE, pair);
 
     return API_CONNECTION.request({
         method: 'POST',
@@ -113,7 +113,7 @@ async function openOrders(API_CONNECTION) {
  * This function will first get all positions, filter through them and close them all
  */
 async function closeOrders(API_CONNECTION) {
-    let onlyPositionsWithSize = await openOrders();
+    let onlyPositionsWithSize = await openOrders(API_CONNECTION);
 
     if (onlyPositionsWithSize.length > 0) {
         onlyPositionsWithSize.forEach(position => {
@@ -139,8 +139,8 @@ async function calculateProfit(entry, mark, side) {
     return (((side === 'buy' ? mark / entry : entry / mark) * 100) - 100).toFixed(3)
 }
 
-async function fundingRate(pair) {
-    let request = ftx.request({
+async function fundingRate(API_CONNECTION, pair) {
+    let request = API_CONNECTION.request({
         method: 'GET',
         path: '/funding_rates',
         data: {
@@ -244,7 +244,7 @@ bot.on('message', async (msg) => {
             bot.sendMessage(chatId, `::Open Orders::`);
             orders.forEach(async order => {
                 let price = await getPrice(API_CONNECTION, order.future);
-                bot.sendMessage(chatId, `Pair: ${order.future} ${order.side}\nFunding Rate: ${await fundingRate(API_CONNECTION, order.future)}\nAvgPrice: ${order.recentAverageOpenPrice}\nSize: ${order.size}\nPnL: ${order.realizedPnl}\nLiq Price: ${order.estimatedLiquidationPrice}\n\nMarkPrice: ${price}\nProfit%: ${await calculateProfit(API_CONNECTION, order.recentAverageOpenPrice, price, order.side)}`);
+                bot.sendMessage(chatId, `Pair: ${order.future} ${order.side}\nFunding Rate: ${await fundingRate(API_CONNECTION, order.future)}\nAvgPrice: ${order.recentAverageOpenPrice}\nSize: ${order.size}\nPnL: ${order.realizedPnl}\nLiq Price: ${order.estimatedLiquidationPrice}\n\nMarkPrice: ${price}\nProfit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}`);
             });
         }
 
@@ -253,9 +253,9 @@ bot.on('message', async (msg) => {
             bot.sendMessage(chatId, `::Closing Orders::`);
             orders.forEach(async order => {
                 let price = await getPrice(API_CONNECTION, order.future);
-                bot.sendMessage(chatId, `Closing ${order.future} ${order.side}\nEntryPrice: ${order.recentAverageOpenPrice}\nMarkPrice: ${await getPrice(API_CONNECTION, order.future)}\nPnL: ${order.realizedPnl}\nProfit%: ${await calculateProfit(API_CONNECTION, order.recentAverageOpenPrice, price, order.side)}`);
+                bot.sendMessage(chatId, `Closing ${order.future} ${order.side}\nEntryPrice: ${order.recentAverageOpenPrice}\nMarkPrice: ${await getPrice(API_CONNECTION, order.future)}\nPnL: ${order.realizedPnl}\nProfit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}`);
             });
-            closeOrders();
+            closeOrders(API_CONNECTION);
         }
     } else if (!check.length > 0) {
         bot.sendMessage(chatId, `Bot not configured correctly, this is how you do it`);
