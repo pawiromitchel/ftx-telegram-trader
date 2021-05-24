@@ -1,11 +1,10 @@
 const FTXRest = require('ftx-api-rest');
 const TelegramBot = require('node-telegram-bot-api');
 const CONFIG = require('./config');
-const ftx = new FTXRest(CONFIG.FTX_API)
 
-async function getBalance() {
+async function getBalance(API_CONNECTION) {
     // get account info
-    let request = ftx.request({
+    let request = API_CONNECTION.request({
         method: 'GET',
         path: '/account'
     })
@@ -13,10 +12,10 @@ async function getBalance() {
     return result.result;
 }
 
-async function getPrice(pair) {
+async function getPrice(API_CONNECTION, pair) {
     // get market rates
     pair = convertString(pair);
-    let request2 = ftx.request({
+    let request2 = API_CONNECTION.request({
         method: 'GET',
         path: '/markets/' + pair
     })
@@ -30,9 +29,9 @@ async function getPrice(pair) {
  * @param {number} percentage how big the order has to be in percentage
  * @param {string} pair eth or btc
  */
-async function calculatePortfolio(percentage, pair) {
+async function calculatePortfolio(API_CONNECTION, percentage, pair) {
     // get account info
-    let request = ftx.request({
+    let request = API_CONNECTION.request({
         method: 'GET',
         path: '/account'
     })
@@ -40,7 +39,7 @@ async function calculatePortfolio(percentage, pair) {
 
     // get market rates
     pair = convertString(pair);
-    let request2 = ftx.request({
+    let request2 = API_CONNECTION.request({
         method: 'GET',
         path: '/markets/' + pair
     })
@@ -79,11 +78,11 @@ function convertString(string) {
  * @param {string} side buy or sell
  * @param {string} size size of the order
  */
-async function marketOrder(pair, side) {
+async function marketOrder(API_CONNECTION, pair, side) {
     pair = convertString(pair);
     let size = await calculatePortfolio(CONFIG.ORDER_SIZE, pair);
 
-    return ftx.request({
+    return API_CONNECTION.request({
         method: 'POST',
         path: '/orders',
         data: {
@@ -96,8 +95,8 @@ async function marketOrder(pair, side) {
     });
 }
 
-async function openOrders() {
-    let request = ftx.request({
+async function openOrders(API_CONNECTION) {
+    let request = API_CONNECTION.request({
         method: 'GET',
         path: '/positions',
         data: {
@@ -113,12 +112,12 @@ async function openOrders() {
 /**
  * This function will first get all positions, filter through them and close them all
  */
-async function closeOrders() {
+async function closeOrders(API_CONNECTION) {
     let onlyPositionsWithSize = await openOrders();
 
     if (onlyPositionsWithSize.length > 0) {
         onlyPositionsWithSize.forEach(position => {
-            ftx.request({
+            API_CONNECTION.request({
                 method: 'POST',
                 path: '/orders',
                 data: {
@@ -136,7 +135,7 @@ async function closeOrders() {
     }
 }
 
-async function calculateProfit(entry, mark, side){
+async function calculateProfit(entry, mark, side) {
     return (((side === 'buy' ? mark / entry : entry / mark) * 100) - 100).toFixed(3)
 }
 
@@ -166,61 +165,100 @@ bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     let text = msg.text ? msg.text : '';
 
-    if(text.includes('/info')) {
-        bot.sendMessage(chatId, `::Info::\nOrder Size: ${CONFIG.ORDER_SIZE}% of Balance\nDEGEN: ${CONFIG.DEGEN}`);
-    }
+    /**
+    * This trigger is to save the auth keys in the local array
+    * "/auth API_KEY API_SECRET SUBACCOUNT_NAME"
+    * 
+    * No Database? For privacy reasons
+    */
+    if (text.includes('/auth')) {
+        if (text.split(' ').length === 4) {
+            const split = text.split(' ');
 
-    if(text.includes('/degen')) {
-        if(CONFIG.DEGEN) {
-            CONFIG.DEGEN = false;
-            bot.sendMessage(chatId, `Degen Mode OFF`);
-        } else {
-            CONFIG.DEGEN = true;
-            bot.sendMessage(chatId, `Degen Mode ON\nOrder size will increase with 5x!`);
-        }
-        reCalculateOrderSize();
-    }
+            let record = {
+                chatId: chatId,
+                key: split[1],
+                secret: split[2],
+                subaccount: split[3]
+            };
 
-    if(text.includes('/long') || text.includes('/short')) {
-        text = text.replace('long', 'buy');
-        text = text.replace('short', 'sell');
-    }
-
-    if (text.includes('/buy') || text.includes('/sell')) {
-        let order = text.split(' ');
-        // only exec when there's a pair given
-        if (order[1]) {
-            // create the order
-            let type = order[0].replace('/', '');
-            let pair = order[1];
-            marketOrder(pair, type);
-            bot.sendMessage(chatId, `::Order::\n${type} order placed for ${pair} at price ${await getPrice(pair)}`);
-        } else {
-            bot.sendMessage(chatId, 'Please specify the asset (eth or btc) kind sir, I am not that smart you know');
+            // check if there's already a record of the user in the array
+            let check = CONFIG.API_KEYS.filter(r => r.chatId === chatId);
+            // if there's no record of it, add it to the array
+            if (!check.length > 0) {
+                CONFIG.API_KEYS.push(record);
+                bot.sendMessage(chatId, `Keys saved, please call /balance to check if it's working correctly`)
+            } else {
+                bot.sendMessage(chatId, `I've detected a previous configured record of you, overwriting it with the current values`)
+                check = record;
+            }
         }
     }
 
-    if (text.includes('/balance')) {
-        let accountInfo = await getBalance();
-        bot.sendMessage(chatId, `::Balance::\nCollateral: ${(accountInfo.collateral).toFixed(2)} USD\nAccount Value: ${(accountInfo.totalAccountValue).toFixed(2)} USD\nMargin Fraction: ${(accountInfo.marginFraction * 100).toFixed(2)}%\nTotalPositionSize: ${(accountInfo.totalPositionSize).toFixed(2)}\nLeverage: ${accountInfo.leverage}`);
-    }
+    let check = CONFIG.API_KEYS.filter(r => r.chatId === chatId);
+    if (check.length > 0) {
+        // make the connection with the user credentials
+        const API_CONNECTION = new FTXRest(check[0]);
 
-    if (text.includes('/open')) {
-        let orders = await openOrders();
-        bot.sendMessage(chatId, `::Open Orders::`);
-        orders.forEach(async order => {
-            let price = await getPrice(order.future);
-            bot.sendMessage(chatId, `Pair: ${order.future} ${order.side}\nFunding Rate: ${await fundingRate(order.future)}\nAvgPrice: ${order.recentAverageOpenPrice}\nSize: ${order.size}\nPnL: ${order.realizedPnl}\nLiq Price: ${order.estimatedLiquidationPrice}\n\nMarkPrice: ${price}\nProfit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}`);
-        });
-    }
+        if (text.includes('/info')) {
+            bot.sendMessage(chatId, `::Info::\nOrder Size: ${CONFIG.ORDER_SIZE}% of Balance\nDEGEN: ${CONFIG.DEGEN}`);
+        }
 
-    if (text.includes('/close')) {
-        let orders = await openOrders();
-        bot.sendMessage(chatId, `::Closing Orders::`);
-        orders.forEach(async order => {
-            let price = await getPrice(order.future);
-            bot.sendMessage(chatId, `Closing ${order.future} ${order.side}\nEntryPrice: ${order.recentAverageOpenPrice}\nMarkPrice: ${await getPrice(order.future)}\nPnL: ${order.realizedPnl}\nProfit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}`);
-        });
-        closeOrders();
+        if (text.includes('/degen')) {
+            if (CONFIG.DEGEN) {
+                CONFIG.DEGEN = false;
+                bot.sendMessage(chatId, `Degen Mode OFF`);
+            } else {
+                CONFIG.DEGEN = true;
+                bot.sendMessage(chatId, `Degen Mode ON\nOrder size will increase with 5x!`);
+            }
+            reCalculateOrderSize();
+        }
+
+        if (text.includes('/long') || text.includes('/short')) {
+            text = text.replace('long', 'buy');
+            text = text.replace('short', 'sell');
+        }
+
+        if (text.includes('/buy') || text.includes('/sell')) {
+            let order = text.split(' ');
+            // only exec when there's a pair given
+            if (order[1]) {
+                // create the order
+                let type = order[0].replace('/', '');
+                let pair = order[1];
+                marketOrder(API_CONNECTION, pair, type);
+                bot.sendMessage(chatId, `::Order::\n${type} order placed for ${pair} at price ${await getPrice(API_CONNECTION, pair)}`);
+            } else {
+                bot.sendMessage(chatId, 'Please specify the asset (eth or btc) kind sir, I am not that smart you know');
+            }
+        }
+
+        if (text.includes('/balance')) {
+            let accountInfo = await getBalance(API_CONNECTION);
+            bot.sendMessage(chatId, `::Balance::\nCollateral: ${(accountInfo.collateral).toFixed(2)} USD\nAccount Value: ${(accountInfo.totalAccountValue).toFixed(2)} USD\nMargin Fraction: ${(accountInfo.marginFraction * 100).toFixed(2)}%\nTotalPositionSize: ${(accountInfo.totalPositionSize).toFixed(2)}\nLeverage: ${accountInfo.leverage}`);
+        }
+
+        if (text.includes('/open')) {
+            let orders = await openOrders(API_CONNECTION);
+            bot.sendMessage(chatId, `::Open Orders::`);
+            orders.forEach(async order => {
+                let price = await getPrice(API_CONNECTION, order.future);
+                bot.sendMessage(chatId, `Pair: ${order.future} ${order.side}\nFunding Rate: ${await fundingRate(API_CONNECTION, order.future)}\nAvgPrice: ${order.recentAverageOpenPrice}\nSize: ${order.size}\nPnL: ${order.realizedPnl}\nLiq Price: ${order.estimatedLiquidationPrice}\n\nMarkPrice: ${price}\nProfit%: ${await calculateProfit(API_CONNECTION, order.recentAverageOpenPrice, price, order.side)}`);
+            });
+        }
+
+        if (text.includes('/close')) {
+            let orders = await openOrders(API_CONNECTION);
+            bot.sendMessage(chatId, `::Closing Orders::`);
+            orders.forEach(async order => {
+                let price = await getPrice(API_CONNECTION, order.future);
+                bot.sendMessage(chatId, `Closing ${order.future} ${order.side}\nEntryPrice: ${order.recentAverageOpenPrice}\nMarkPrice: ${await getPrice(API_CONNECTION, order.future)}\nPnL: ${order.realizedPnl}\nProfit%: ${await calculateProfit(API_CONNECTION, order.recentAverageOpenPrice, price, order.side)}`);
+            });
+            closeOrders();
+        }
+    } else if (!check.length > 0) {
+        bot.sendMessage(chatId, `Bot not configured correctly, this is how you do it`);
+        bot.sendMessage(chatId, `/auth API_KEY API_SECRET SUBACCOUNT_NAME`);
     }
 });
