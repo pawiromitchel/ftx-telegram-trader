@@ -246,7 +246,7 @@ ${type.toUpperCase()} order placed for ${pair} at price ${await getPrice(API_CON
 Collateral: $${(accountInfo.collateral).toFixed(2)}
 Account Value: $${(accountInfo.totalAccountValue).toFixed(2)}
 Margin Fraction: ${(accountInfo.marginFraction * 100).toFixed(2)}%
-TotalPositionSize: ${(accountInfo.totalPositionSize).toFixed(2)}
+TotalPositionSize: $${(accountInfo.totalPositionSize).toFixed(2)}
 Leverage: ${accountInfo.leverage}
             `);
         }
