@@ -1,6 +1,7 @@
 const FTXRest = require('ftx-api-rest');
 const TelegramBot = require('node-telegram-bot-api');
 const CONFIG = require('./config');
+const DB = require('./handleData');
 
 async function getBalance(API_CONNECTION) {
     // get account info
@@ -165,6 +166,9 @@ bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     let text = msg.text ? msg.text : '';
 
+    // check if there's already a record of the user in the array
+    let check = await DB.getOne(chatId);
+
     /**
     * This trigger is to save the auth keys in the local array
     * "/auth API_KEY API_SECRET SUBACCOUNT_NAME"
@@ -182,20 +186,18 @@ bot.on('message', async (msg) => {
                 subaccount: split[3]
             };
 
-            // check if there's already a record of the user in the array
-            let check = CONFIG.API_KEYS.filter(r => r.chatId === chatId);
             // if there's no record of it, add it to the array
             if (!check.length > 0) {
                 CONFIG.API_KEYS.push(record);
+                DB.saveKey(record);
                 bot.sendMessage(chatId, `Keys saved, please call /balance to check if it's working correctly`)
             } else {
                 bot.sendMessage(chatId, `I've detected a previous configured record of you, overwriting it with the current values`)
-                check = record;
+                DB.overWriteKey(record);
             }
         }
     }
 
-    let check = CONFIG.API_KEYS.filter(r => r.chatId === chatId);
     if (check.length > 0) {
         // make the connection with the user credentials
         const API_CONNECTION = new FTXRest(check[0]);
