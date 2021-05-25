@@ -246,7 +246,18 @@ bot.on('message', async (msg) => {
             bot.sendMessage(chatId, `::Open Orders::`);
             orders.forEach(async order => {
                 let price = await getPrice(API_CONNECTION, order.future);
-                bot.sendMessage(chatId, `Pair: ${order.future} ${order.side}\nFunding Rate: ${await fundingRate(API_CONNECTION, order.future)}\nAvgPrice: ${order.recentAverageOpenPrice}\nSize: ${order.size}\nPnL: ${order.realizedPnl}\nLiq Price: ${order.estimatedLiquidationPrice}\n\nMarkPrice: ${price}\nProfit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}`);
+                bot.sendMessage(chatId, `
+${order.side.toUpperCase()} ${order.future}
+Funding Rate: ${await fundingRate(API_CONNECTION, order.future)}
+
+AvgPrice: ${order.recentAverageOpenPrice}
+Size: ${order.size}
+Liq Price: ${order.estimatedLiquidationPrice}
+
+PnL Today: ${order.realizedPnl}
+MarkPrice: ${price}
+Profit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}
+                `);
             });
         }
 
