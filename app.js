@@ -230,7 +230,10 @@ bot.on('message', async (msg) => {
                 let type = order[0].replace('/', '');
                 let pair = order[1];
                 marketOrder(API_CONNECTION, pair, type);
-                bot.sendMessage(chatId, `::Order::\n${type} order placed for ${pair} at price ${await getPrice(API_CONNECTION, pair)}`);
+                bot.sendMessage(chatId, `
+::Order::
+${type.toUpperCase()} order placed for ${pair} at price ${await getPrice(API_CONNECTION, pair)}
+                `);
             } else {
                 bot.sendMessage(chatId, 'Please specify the asset (eth or btc) kind sir, I am not that smart you know');
             }
@@ -238,7 +241,14 @@ bot.on('message', async (msg) => {
 
         if (text.includes('/balance')) {
             let accountInfo = await getBalance(API_CONNECTION);
-            bot.sendMessage(chatId, `::Balance::\nCollateral: ${(accountInfo.collateral).toFixed(2)} USD\nAccount Value: ${(accountInfo.totalAccountValue).toFixed(2)} USD\nMargin Fraction: ${(accountInfo.marginFraction * 100).toFixed(2)}%\nTotalPositionSize: ${(accountInfo.totalPositionSize).toFixed(2)}\nLeverage: ${accountInfo.leverage}`);
+            bot.sendMessage(chatId, `
+::Balance::
+Collateral: $${(accountInfo.collateral).toFixed(2)}
+Account Value: $${(accountInfo.totalAccountValue).toFixed(2)}
+Margin Fraction: ${(accountInfo.marginFraction * 100).toFixed(2)}%
+TotalPositionSize: ${(accountInfo.totalPositionSize).toFixed(2)}
+Leverage: ${accountInfo.leverage}
+            `);
         }
 
         if (text.includes('/open')) {
@@ -250,13 +260,13 @@ bot.on('message', async (msg) => {
 ${order.side.toUpperCase()} ${order.future}
 Funding Rate: ${await fundingRate(API_CONNECTION, order.future)}
 
-AvgPrice: ${order.recentAverageOpenPrice}
+AvgPrice: $${order.recentAverageOpenPrice.toFixed(2)}
 Size: ${order.size}
-Liq Price: ${order.estimatedLiquidationPrice}
+Liq Price: $${order.estimatedLiquidationPrice.toFixed(2)}
 
-PnL Today: ${order.realizedPnl}
-MarkPrice: ${price}
-Profit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}
+PnL Today: $${order.realizedPnl.toFixed(2)}
+MarkPrice: $${price}
+Profit: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}%
                 `);
             });
         }
@@ -266,7 +276,18 @@ Profit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side
             bot.sendMessage(chatId, `::Closing Orders::`);
             orders.forEach(async order => {
                 let price = await getPrice(API_CONNECTION, order.future);
-                bot.sendMessage(chatId, `Closing ${order.future} ${order.side}\nEntryPrice: ${order.recentAverageOpenPrice}\nMarkPrice: ${await getPrice(API_CONNECTION, order.future)}\nPnL: ${order.realizedPnl}\nProfit%: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}`);
+                bot.sendMessage(chatId, `
+Closing ${order.side.toUpperCase()} ${order.future}
+Funding Rate: ${await fundingRate(API_CONNECTION, order.future)}
+
+AvgPrice: $${order.recentAverageOpenPrice.toFixed(2)}
+Size: ${order.size}
+Liq Price: $${order.estimatedLiquidationPrice.toFixed(2)}
+
+PnL Today: $${order.realizedPnl.toFixed(2)}
+MarkPrice: $${price}
+Profit: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}%
+                `);
             });
             closeOrders(API_CONNECTION);
         }
