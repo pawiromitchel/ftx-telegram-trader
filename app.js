@@ -216,6 +216,7 @@ Degen Mode: ${check[0].degen ? '✅' : '❌'}`
             } else {
                 DB.setDegenMode(chatId, true);
                 bot.sendMessage(chatId, `Degen Mode ✅\nOrder size will increase with 5x 👀!`);
+                bot.sendAnimation(chatId, './assets/degen_mode.mp4')
             }
         }
 
@@ -269,10 +270,11 @@ Leverage: ${accountInfo.leverage}
 
         if (text.includes('/open')) {
             let orders = await openOrders(API_CONNECTION);
-            bot.sendMessage(chatId, `::Open Orders::`);
-            orders.forEach(async order => {
-                let price = await getPrice(API_CONNECTION, order.future);
-                bot.sendMessage(chatId, `
+            if(orders.length > 0) {
+                bot.sendMessage(chatId, `::Open Orders::`);
+                orders.forEach(async order => {
+                    let price = await getPrice(API_CONNECTION, order.future);
+                    bot.sendMessage(chatId, `
 ${order.side.toUpperCase()} ${order.future}
 Funding Rate: ${await fundingRate(API_CONNECTION, order.future)}
 
@@ -283,8 +285,11 @@ Liq Price: $${order.estimatedLiquidationPrice.toFixed(2)}
 PnL Today: $${order.realizedPnl.toFixed(2)}
 MarkPrice: $${price}
 Profit: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)}%
-                `);
-            });
+                    `);
+                });
+            } else {
+                bot.sendMessage(chatId, 'No open orders');
+            }
         }
 
         if (text.includes('/close')) {
