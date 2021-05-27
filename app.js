@@ -79,9 +79,9 @@ function convertString(string) {
  * @param {string} side buy or sell
  * @param {string} size size of the order
  */
-async function marketOrder(API_CONNECTION, pair, side) {
+async function marketOrder(API_CONNECTION, orderSize, pair, side) {
     pair = convertString(pair);
-    let size = await calculatePortfolio(API_CONNECTION, CONFIG.ORDER_SIZE, pair);
+    let size = await calculatePortfolio(API_CONNECTION, orderSize, pair);
 
     return API_CONNECTION.request({
         method: 'POST',
@@ -153,10 +153,6 @@ async function fundingRate(API_CONNECTION, pair) {
     return result.result[0].rate;
 }
 
-function reCalculateOrderSize() {
-    CONFIG.ORDER_SIZE = 100 * (CONFIG.DEGEN ? 5 : 1);
-}
-
 const token = CONFIG.TELEGRAM_BOT_TOKEN;
 // Create a bot that uses 'polling' to fetch new updates
 const bot = new TelegramBot(token, { polling: true });
@@ -183,7 +179,9 @@ bot.on('message', async (msg) => {
                 chatId: chatId,
                 key: split[1],
                 secret: split[2],
-                subaccount: split[3]
+                subaccount: split[3],
+                orderSize: 100,
+                degen: false
             };
 
             // if there's no record of it, add it to the array
@@ -203,23 +201,37 @@ bot.on('message', async (msg) => {
         const API_CONNECTION = new FTXRest(check[0]);
 
         if (text.includes('/info')) {
-            bot.sendMessage(chatId, `::Info::\nOrder Size: ${CONFIG.ORDER_SIZE}% of Balance\nDEGEN: ${CONFIG.DEGEN}`);
+            const size = check[0].orderSize ? check[0].orderSize : 100;
+            const upSize = check[0].degen ? size * 5 : size;
+            bot.sendMessage(chatId, `::Info::
+Order Size: ${upSize}% of collateral
+Degen Mode: ${check[0].degen ? '✅' : '❌'}`
+            );
         }
 
         if (text.includes('/degen')) {
-            if (CONFIG.DEGEN) {
-                CONFIG.DEGEN = false;
-                bot.sendMessage(chatId, `Degen Mode OFF`);
+            if (check[0].degen) {
+                DB.setDegenMode(chatId, false);
+                bot.sendMessage(chatId, `Degen Mode ❌`);
             } else {
-                CONFIG.DEGEN = true;
-                bot.sendMessage(chatId, `Degen Mode ON\nOrder size will increase with 5x!`);
+                DB.setDegenMode(chatId, true);
+                bot.sendMessage(chatId, `Degen Mode ✅\nOrder size will increase with 5x 👀!`);
             }
-            reCalculateOrderSize();
         }
 
         if (text.includes('/long') || text.includes('/short')) {
             text = text.replace('long', 'buy');
             text = text.replace('short', 'sell');
+        }
+
+        if (text.includes('/size')) {
+            const size = text.split(' ');
+            if(size[1]) {
+                DB.setOrderSize(chatId, size[1]);
+                bot.sendMessage(chatId, `You're order size is now ${size[1]}% of your collateral`)
+            } else {
+                bot.sendMessage(chatId, 'Can you please give me a number to work with');
+            }
         }
 
         if (text.includes('/buy') || text.includes('/sell')) {
@@ -229,7 +241,11 @@ bot.on('message', async (msg) => {
                 // create the order
                 let type = order[0].replace('/', '');
                 let pair = order[1];
-                marketOrder(API_CONNECTION, pair, type);
+                // if there's no size given then default should be 100% of the portfolio
+                let size = check[0].orderSize ? check[0].orderSize : 100;
+                // if degen is true then increase size with 5x
+                let upSize = check[0].degen ? size * 5 : size;
+                marketOrder(API_CONNECTION, upSize, pair, type);
                 bot.sendMessage(chatId, `
 ::Order::
 ${type.toUpperCase()} order placed for ${pair} at price ${await getPrice(API_CONNECTION, pair)}

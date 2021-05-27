@@ -31,4 +31,22 @@ async function overWriteKey(creds) {
     fs.writeFileSync('data.json', JSON.stringify(apiKeys));
 }
 
-module.exports = { getData, getOne, saveKey, overWriteKey }
+async function setOrderSize(chatId, size) {
+    let rawdata = fs.readFileSync("data.json");
+    let apiKeys = JSON.parse(rawdata);
+    let check = apiKeys.filter(r => r.chatId === chatId);
+    // overwrite values
+    check[0].orderSize = size;
+    fs.writeFileSync('data.json', JSON.stringify(apiKeys));
+}
+
+async function setDegenMode(chatId, degen) {
+    let rawdata = fs.readFileSync("data.json");
+    let apiKeys = JSON.parse(rawdata);
+    let check = apiKeys.filter(r => r.chatId === chatId);
+    // overwrite values
+    check[0].degen = degen;
+    fs.writeFileSync('data.json', JSON.stringify(apiKeys));
+}
+
+module.exports = { getData, getOne, saveKey, overWriteKey, setOrderSize, setDegenMode }
