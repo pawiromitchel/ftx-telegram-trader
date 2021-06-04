@@ -269,7 +269,7 @@ Degen Mode: ${check[0].degen ? '✅' : '❌'}`
                 marketOrder(API_CONNECTION, upSize, pair, side)
                     .then(async () => {
                         // buy 0.01 ETH at $2800
-                        bot.sendMessage(chatId, `${side.toUpperCase()} $${upSize} ${pair} @ $${await getPrice(API_CONNECTION, pair)}`)
+                        bot.sendMessage(chatId, `✅ ${side.toUpperCase()} $${upSize} ${pair} @ $${await getPrice(API_CONNECTION, pair)}`)
                     })
                     .catch(res => bot.sendMessage(chatId, `❌ ${res}`))
             } else {
@@ -295,7 +295,7 @@ Degen Mode: ${check[0].degen ? '✅' : '❌'}`
                 let upSize = check[0].degen ? size * 5 : size;
                 marketOrder(API_CONNECTION, upSize, pair, side, 'limit', price)
                     .then(async () => {
-                        bot.sendMessage(chatId, `LIMIT ${side.toUpperCase()} $${upSize} ${pair} @ $${price}`)
+                        bot.sendMessage(chatId, `✅ LIMIT ${side.toUpperCase()} $${upSize} ${pair} @ $${price}`)
                     })
                     .catch(res => bot.sendMessage(chatId, `❌ ${res}`))
             } else {
