@@ -305,7 +305,7 @@ Degen Mode: ${check[0].degen ? '✅' : '❌'}`
 
         if (checkText(text, 'closelimit')) {
             await closeLimitOrders(API_CONNECTION)
-                .then(() => bot.sendMessage(chatId, `::Closed Limit Orders::`))
+                .then(() => bot.sendMessage(chatId, `✅ Closing Limit Orders`))
                 .catch(res => bot.sendMessage(chatId, `❌ ${res}`))
         }
 
@@ -333,6 +333,8 @@ Price: $${order.price.toFixed(2)}
 Size: ${order.size}
                         `);
                     })
+                } else {
+                    bot.sendMessage(chatId, `No Limit orders found`);
                 }
             })
             .catch(res => bot.sendMessage(chatId, `❌ ${res}`))
