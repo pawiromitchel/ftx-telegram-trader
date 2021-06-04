@@ -2,6 +2,7 @@ const FTXRest = require('ftx-api-rest');
 const TelegramBot = require('node-telegram-bot-api');
 const CONFIG = require('./config');
 const DB = require('./handleData');
+const BOTNAME = 'DegenTraderV2_bot';
 
 async function getBalance(API_CONNECTION) {
     // get account info
@@ -67,7 +68,7 @@ function convertString(string) {
  * @param {string} side buy or sell
  * @param {string} size size of the order
  */
-async function marketOrder(API_CONNECTION, orderSize, pair, side) {
+async function marketOrder(API_CONNECTION, orderSize, pair, side, type = 'market', price = null) {
     let size = await calculatePortfolio(API_CONNECTION, orderSize, pair);
 
     return API_CONNECTION.request({
@@ -77,8 +78,8 @@ async function marketOrder(API_CONNECTION, orderSize, pair, side) {
             market: pair,
             size: size,
             side: side,
-            type: 'market',
-            price: null
+            type: type,
+            price: price
         }
     });
 }
@@ -95,6 +96,13 @@ async function openOrders(API_CONNECTION) {
     let result = await request;
     let onlyPositionsWithSize = result.result.filter(pos => pos.size !== 0);
     return onlyPositionsWithSize;
+}
+
+async function openLimitOrders(API_CONNECTION) {
+    return API_CONNECTION.request({
+        method: 'GET',
+        path: '/orders'
+    });
 }
 
 /**
@@ -123,6 +131,20 @@ async function closeOrders(API_CONNECTION) {
     }
 }
 
+/**
+ * Close limit orders
+ * @param {*} API_CONNECTION 
+ * @returns 
+ */
+async function closeLimitOrders(API_CONNECTION) {
+    return API_CONNECTION.request({
+        method: 'DELETE',
+        path: '/orders'
+    });
+}
+
+
+
 async function calculateProfit(entry, mark, side) {
     return (((side === 'buy' ? mark / entry : entry / mark) * 100) - 100).toFixed(3)
 }
@@ -138,6 +160,18 @@ async function fundingRate(API_CONNECTION, pair) {
 
     let result = await request;
     return result.result[0].rate;
+}
+
+/**
+ * Check if the incoming text === checkText
+ * @param {string} incomingText 
+ * @param {string} checkText 
+ * @returns boolean
+ */
+function checkText(incomingText, checkText) {
+    incomingText = incomingText.split(' ')[0];
+    incomingText = incomingText.replace('/', '');
+    return incomingText === checkText || incomingText === (`${checkText}@${BOTNAME}`)
 }
 
 const token = CONFIG.TELEGRAM_BOT_TOKEN;
@@ -187,7 +221,7 @@ bot.on('message', async (msg) => {
         // make the connection with the user credentials
         const API_CONNECTION = new FTXRest(check[0]);
 
-        if (text.includes('/info')) {
+        if (checkText(text, 'info')) {
             const size = check[0].orderSize ? check[0].orderSize : 100;
             const upSize = check[0].degen ? size * 5 : size;
             bot.sendMessage(chatId, `::Info::
@@ -196,7 +230,7 @@ Degen Mode: ${check[0].degen ? '✅' : '❌'}`
             );
         }
 
-        if (text.includes('/degen')) {
+        if (checkText(text, 'degen')) {
             if (check[0].degen) {
                 DB.setDegenMode(chatId, false);
                 bot.sendMessage(chatId, `Degen Mode ❌`);
@@ -207,12 +241,7 @@ Degen Mode: ${check[0].degen ? '✅' : '❌'}`
             }
         }
 
-        if (text.includes('/long') || text.includes('/short')) {
-            text = text.replace('long', 'buy');
-            text = text.replace('short', 'sell');
-        }
-
-        if (text.includes('/size')) {
+        if (checkText(text, 'size')) {
             const size = text.split(' ');
             if (size[1]) {
                 DB.setOrderSize(chatId, size[1]);
@@ -222,28 +251,63 @@ Degen Mode: ${check[0].degen ? '✅' : '❌'}`
             }
         }
 
-        if (text.includes('/buy') || text.includes('/sell')) {
+        if (checkText(text, 'buy') || checkText(text, 'sell') || checkText(text, 'long') || checkText(text, 'short')) {
+            text = text.replace('long', 'buy');
+            text = text.replace('short', 'sell');
+
             let order = text.split(' ');
             // only exec when there's a pair given
             if (order[1]) {
                 // create the order
                 let type = order[0].replace('/', '');
                 let pair = convertString(order[1]);
+
                 // if there's no size given then default should be 100% of the portfolio
                 let size = check[0].orderSize ? check[0].orderSize : 100;
                 // if degen is true then increase size with 5x
                 let upSize = check[0].degen ? size * 5 : size;
                 marketOrder(API_CONNECTION, upSize, pair, type)
-                .then(async () => {
-                    bot.sendMessage(chatId, `${type.toUpperCase()} order placed for ${pair} at price ${await getPrice(API_CONNECTION, pair)}`)
-                })
-                .catch(res => bot.sendMessage(chatId, `❌ ${res}`))
+                    .then(async () => {
+                        // buy 0.01 ETH at $2800
+                        bot.sendMessage(chatId, `${type.toUpperCase()} $${upSize} ${pair} @ $${await getPrice(API_CONNECTION, pair)}`)
+                    })
+                    .catch(res => bot.sendMessage(chatId, `❌ ${res}`))
             } else {
                 bot.sendMessage(chatId, 'Please specify the asset (eth or btc) kind sir, I am not that smart you know');
             }
         }
 
-        if (text.includes('/balance')) {
+        // /limitbuy ETH 2800
+        if (checkText(text, 'lbuy') || checkText(text, 'lsell')) {
+            let order = text.split(' ');
+            // only exec when there's a pair + a price given
+            if (order[1] && order[2]) {
+                // create the order
+                let type = order[0].replace('/l', '');
+                let pair = convertString(order[1]);
+                let price = order[2];
+
+                // if there's no size given then default should be 100% of the portfolio
+                let size = check[0].orderSize ? check[0].orderSize : 100;
+                // if degen is true then increase size with 5x
+                let upSize = check[0].degen ? size * 5 : size;
+                marketOrder(API_CONNECTION, upSize, pair, type, 'limit', price)
+                    .then(async () => {
+                        bot.sendMessage(chatId, `LIMIT ${type.toUpperCase()} $${upSize} ${pair} @ $${price}`)
+                    })
+                    .catch(res => bot.sendMessage(chatId, `❌ ${res}`))
+            } else {
+                bot.sendMessage(chatId, 'Please specify the asset (eth or btc) kind sir, I am not that smart you know');
+            }
+        }
+
+        if (checkText(text, 'closelimit')) {
+            await closeLimitOrders(API_CONNECTION)
+                .then(() => bot.sendMessage(chatId, `::Closed Limit Orders::`))
+                .catch(res => bot.sendMessage(chatId, `❌ ${res}`))
+        }
+
+        if (checkText(text, 'balance')) {
             let accountInfo = await getBalance(API_CONNECTION);
             bot.sendMessage(chatId, `
 ::Balance::
@@ -255,7 +319,24 @@ Leverage: ${accountInfo.leverage}
             `);
         }
 
-        if (text.includes('/open')) {
+        if(checkText(text, 'openlimit')){
+            await openLimitOrders(API_CONNECTION)
+            .then(res => {
+                if(res.result.length > 0) {
+                    bot.sendMessage(chatId, `::Open Limit Orders::`);
+                    res.result.forEach(order => {
+                        bot.sendMessage(chatId, `
+LIMIT ${order.side.toUpperCase()} ${order.future}
+Price: $${order.price.toFixed(2)}
+Size: ${order.size}
+                        `);
+                    })
+                }
+            })
+            .catch(res => bot.sendMessage(chatId, `❌ ${res}`))
+        }
+
+        if (checkText(text, 'open')) {
             let orders = await openOrders(API_CONNECTION);
             if (orders.length > 0) {
                 bot.sendMessage(chatId, `::Open Orders::`);
@@ -279,7 +360,7 @@ Profit: ${await calculateProfit(order.recentAverageOpenPrice, price, order.side)
             }
         }
 
-        if (text.includes('/close')) {
+        if (checkText(text, 'close')) {
             let orders = await openOrders(API_CONNECTION);
             bot.sendMessage(chatId, `::Closing Orders::`);
             orders.forEach(async order => {
