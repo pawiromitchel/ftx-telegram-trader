@@ -15,7 +15,6 @@ async function getBalance(API_CONNECTION) {
 
 async function getPrice(API_CONNECTION, pair) {
     // get market rates
-    pair = convertString(pair);
     let request2 = API_CONNECTION.request({
         method: 'GET',
         path: '/markets/' + pair
@@ -39,7 +38,6 @@ async function calculatePortfolio(API_CONNECTION, percentage, pair) {
     let result = await request;
 
     // get market rates
-    pair = convertString(pair);
     let request2 = API_CONNECTION.request({
         method: 'GET',
         path: '/markets/' + pair
@@ -60,17 +58,7 @@ async function calculatePortfolio(API_CONNECTION, percentage, pair) {
  * @returns converted string
  */
 function convertString(string) {
-    switch (string) {
-        case 'eth':
-            string = 'ETH-PERP'
-            break;
-        case 'btc':
-            string = "BTC-PERP"
-            break;
-        default:
-            break;
-    }
-    return string;
+    return `${string.toUpperCase()}-PERP`;
 }
 
 /**
@@ -80,7 +68,6 @@ function convertString(string) {
  * @param {string} size size of the order
  */
 async function marketOrder(API_CONNECTION, orderSize, pair, side) {
-    pair = convertString(pair);
     let size = await calculatePortfolio(API_CONNECTION, orderSize, pair);
 
     return API_CONNECTION.request({
@@ -227,7 +214,7 @@ Degen Mode: ${check[0].degen ? '✅' : '❌'}`
 
         if (text.includes('/size')) {
             const size = text.split(' ');
-            if(size[1]) {
+            if (size[1]) {
                 DB.setOrderSize(chatId, size[1]);
                 bot.sendMessage(chatId, `You're order size is now ${size[1]}% of your collateral`)
             } else {
@@ -241,16 +228,16 @@ Degen Mode: ${check[0].degen ? '✅' : '❌'}`
             if (order[1]) {
                 // create the order
                 let type = order[0].replace('/', '');
-                let pair = order[1];
+                let pair = convertString(order[1]);
                 // if there's no size given then default should be 100% of the portfolio
                 let size = check[0].orderSize ? check[0].orderSize : 100;
                 // if degen is true then increase size with 5x
                 let upSize = check[0].degen ? size * 5 : size;
-                marketOrder(API_CONNECTION, upSize, pair, type);
-                bot.sendMessage(chatId, `
-::Order::
-${type.toUpperCase()} order placed for ${pair} at price ${await getPrice(API_CONNECTION, pair)}
-                `);
+                marketOrder(API_CONNECTION, upSize, pair, type)
+                .then(async () => {
+                    bot.sendMessage(chatId, `${type.toUpperCase()} order placed for ${pair} at price ${await getPrice(API_CONNECTION, pair)}`)
+                })
+                .catch(res => bot.sendMessage(chatId, `❌ ${res}`))
             } else {
                 bot.sendMessage(chatId, 'Please specify the asset (eth or btc) kind sir, I am not that smart you know');
             }
@@ -270,7 +257,7 @@ Leverage: ${accountInfo.leverage}
 
         if (text.includes('/open')) {
             let orders = await openOrders(API_CONNECTION);
-            if(orders.length > 0) {
+            if (orders.length > 0) {
                 bot.sendMessage(chatId, `::Open Orders::`);
                 orders.forEach(async order => {
                     let price = await getPrice(API_CONNECTION, order.future);
