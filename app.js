@@ -278,7 +278,7 @@ Degen Mode: ${check[0].degen ? '✅' : '❌'}`
         }
 
         // /limitbuy ETH 2800
-        if (checkText(text, 'lbuy') || checkText(text, 'lsell')) {
+        if (checkText(text, 'limitbuy') || checkText(text, 'limitsell') || checkText(text, 'limitlong') || checkText(text, 'limitshort')) {
             let order = text.split(' ');
             // only exec when there's a pair + a price given
             if (order[1] && order[2]) {
