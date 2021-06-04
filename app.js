@@ -259,17 +259,17 @@ Degen Mode: ${check[0].degen ? '✅' : '❌'}`
             // only exec when there's a pair given
             if (order[1]) {
                 // create the order
-                let type = order[0].replace('/', '');
+                let side = order[0].replace('/', '').replace(BOTNAME, '');
                 let pair = convertString(order[1]);
 
                 // if there's no size given then default should be 100% of the portfolio
                 let size = check[0].orderSize ? check[0].orderSize : 100;
                 // if degen is true then increase size with 5x
                 let upSize = check[0].degen ? size * 5 : size;
-                marketOrder(API_CONNECTION, upSize, pair, type)
+                marketOrder(API_CONNECTION, upSize, pair, side)
                     .then(async () => {
                         // buy 0.01 ETH at $2800
-                        bot.sendMessage(chatId, `${type.toUpperCase()} $${upSize} ${pair} @ $${await getPrice(API_CONNECTION, pair)}`)
+                        bot.sendMessage(chatId, `${side.toUpperCase()} $${upSize} ${pair} @ $${await getPrice(API_CONNECTION, pair)}`)
                     })
                     .catch(res => bot.sendMessage(chatId, `❌ ${res}`))
             } else {
@@ -285,7 +285,7 @@ Degen Mode: ${check[0].degen ? '✅' : '❌'}`
             // only exec when there's a pair + a price given
             if (order[1] && order[2]) {
                 // create the order
-                let type = order[0].replace('/limit', '');
+                let side = order[0].replace('/limit', '').replace(BOTNAME, '');
                 let pair = convertString(order[1]);
                 let price = order[2];
 
@@ -293,9 +293,9 @@ Degen Mode: ${check[0].degen ? '✅' : '❌'}`
                 let size = check[0].orderSize ? check[0].orderSize : 100;
                 // if degen is true then increase size with 5x
                 let upSize = check[0].degen ? size * 5 : size;
-                marketOrder(API_CONNECTION, upSize, pair, type, 'limit', price)
+                marketOrder(API_CONNECTION, upSize, pair, side, 'limit', price)
                     .then(async () => {
-                        bot.sendMessage(chatId, `LIMIT ${type.toUpperCase()} $${upSize} ${pair} @ $${price}`)
+                        bot.sendMessage(chatId, `LIMIT ${side.toUpperCase()} $${upSize} ${pair} @ $${price}`)
                     })
                     .catch(res => bot.sendMessage(chatId, `❌ ${res}`))
             } else {
