@@ -273,7 +273,7 @@ Degen Mode: ${check[0].degen ? '✅' : '❌'}`
                     })
                     .catch(res => bot.sendMessage(chatId, `❌ ${res}`))
             } else {
-                bot.sendMessage(chatId, 'Please specify the asset (eth or btc) kind sir, I am not that smart you know');
+                bot.sendMessage(chatId, 'Come on man, I need more info 😒');
             }
         }
 
@@ -299,7 +299,7 @@ Degen Mode: ${check[0].degen ? '✅' : '❌'}`
                     })
                     .catch(res => bot.sendMessage(chatId, `❌ ${res}`))
             } else {
-                bot.sendMessage(chatId, 'Please specify the asset (eth or btc) kind sir, I am not that smart you know');
+                bot.sendMessage(chatId, 'Come on man, I need more info 😒');
             }
         }
 
