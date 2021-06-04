@@ -2,7 +2,7 @@ const FTXRest = require('ftx-api-rest');
 const TelegramBot = require('node-telegram-bot-api');
 const CONFIG = require('./config');
 const DB = require('./handleData');
-const BOTNAME = 'DegenTraderV2_bot';
+const BOTNAME = '@DegenTraderV2_bot';
 
 async function getBalance(API_CONNECTION) {
     // get account info
@@ -171,7 +171,7 @@ async function fundingRate(API_CONNECTION, pair) {
 function checkText(incomingText, checkText) {
     incomingText = incomingText.split(' ')[0];
     incomingText = incomingText.replace('/', '');
-    return incomingText === checkText || incomingText === (`${checkText}@${BOTNAME}`)
+    return incomingText === checkText || incomingText === (`${checkText}${BOTNAME}`)
 }
 
 const token = CONFIG.TELEGRAM_BOT_TOKEN;
