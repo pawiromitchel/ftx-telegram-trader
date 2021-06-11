@@ -219,8 +219,19 @@ Profit: ${HELPER.calculateProfit(order.recentAverageOpenPrice, price, order.side
             }
             FTX.closeOrders(API_CONNECTION);
         }
+
+        if (HELPER.checkText(text, 'alert')) {
+            bot.sendMessage(chatId, `So, you want Tradingview alerts right? He's what you need to do:
+- Set the condition of your indicator
+- Options = Once per bar close
+- Webhook URL = http://31.220.56.175/hook
+- Give it any alert name
+- Message should be = {"chatId":${chatId},"type":BUY or SELL,"exchange":{{exchange}},"ticker":{{ticker}}}`)
+        }
     } else if (!check.length > 0) {
         bot.sendMessage(chatId, `Bot not configured correctly, this is how you do it`);
         bot.sendMessage(chatId, `/auth API_KEY API_SECRET SUBACCOUNT_NAME`);
     }
 });
+
+module.exports = { bot }
