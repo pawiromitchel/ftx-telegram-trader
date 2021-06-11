@@ -263,4 +263,5 @@ ${order.type} ${order.ticker} on ${order.exchange}`)
  * Made possible by forwarding port 80 from node to the server
  * https://www.digitalocean.com/community/tutorials/how-to-use-pm2-to-setup-a-node-js-production-environment-on-an-ubuntu-vps
  */
-app.listen(80, () => console.log(`🚀 Server running on port ${PORT}`))
+const PORT = 80;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`))
