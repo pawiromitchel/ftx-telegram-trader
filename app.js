@@ -4,6 +4,17 @@ const CONFIG = require('./config/config');
 const DB = require('./services/data.service');
 const HELPER = require('./services/helper.service');
 const FTX = require('./services/ftx.service');
+const express = require("express")
+const app = express()
+const bot = require('./app').bot;
+// To parse the incoming requests with JSON payloads
+app.use(express.urlencoded({ extended: true }))
+// handle content type text/plain and text/json
+app.use(express.text())
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+app.use(express.json()) // To parse the incoming requests with JSON payloads
+
 
 const token = CONFIG.TELEGRAM_BOT_TOKEN;
 // Create a bot that uses 'polling' to fetch new updates
@@ -234,4 +245,23 @@ Profit: ${HELPER.calculateProfit(order.recentAverageOpenPrice, price, order.side
     }
 });
 
-module.exports = { bot }
+// default route
+app.get("/", (req, res) => {
+    res.status(200).send('silence is golden').end()
+})
+
+app.post("/hook", (req, res) => {
+    console.log('Webhook received', req.body);
+    if (req.body.chatId) {
+        const order = req.body;
+        bot.sendMessage(order.chatId, `Webhook received:
+${order.type} ${order.ticker} on ${order.exchange}`)
+    }
+    res.status(200).end()
+})
+
+/**
+ * Made possible by forwarding port 80 from node to the server
+ * https://www.digitalocean.com/community/tutorials/how-to-use-pm2-to-setup-a-node-js-production-environment-on-an-ubuntu-vps
+ */
+app.listen(80, () => console.log(`🚀 Server running on port ${PORT}`))
