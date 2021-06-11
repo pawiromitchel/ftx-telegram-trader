@@ -6,7 +6,6 @@ const HELPER = require('./services/helper.service');
 const FTX = require('./services/ftx.service');
 const express = require("express")
 const app = express()
-const bot = require('./app').bot;
 // To parse the incoming requests with JSON payloads
 app.use(express.urlencoded({ extended: true }))
 // handle content type text/plain and text/json
