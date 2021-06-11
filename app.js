@@ -236,7 +236,7 @@ Profit: ${HELPER.calculateProfit(order.recentAverageOpenPrice, price, order.side
 - Options = Once per bar close
 - Webhook URL = http://31.220.56.175/hook
 - Give it any alert name
-- Message should be = {"chatId":${chatId},"type":BUY or SELL,"exchange":{{exchange}},"ticker":{{ticker}}}`)
+- Message should be = {"chatId":${chatId},"type":"BUY or SELL","exchange":{{exchange}},"ticker":{{ticker}}}`)
         }
     } else if (!check.length > 0) {
         bot.sendMessage(chatId, `Bot not configured correctly, this is how you do it`);
