@@ -127,11 +127,16 @@ async function closeOrders(API_CONNECTION, pair = '') {
  * @param {*} API_CONNECTION 
  * @returns 
  */
-async function closeLimitOrders(API_CONNECTION) {
-    return API_CONNECTION.request({
+async function closeLimitOrders(API_CONNECTION, pair = '') {
+    let request = {
         method: 'DELETE',
         path: '/orders'
-    });
+    }
+
+    if (pair) {
+        request.data = { market: HELPER.convertString(pair) }
+    }
+    return API_CONNECTION.request(request);
 }
 
 async function fundingRate(API_CONNECTION, pair) {

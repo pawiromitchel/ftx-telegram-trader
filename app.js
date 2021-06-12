@@ -72,12 +72,12 @@ What can I 😎 do for you?
 /balance - Get account balance
 /open - Get open orders
 /buy - Create a buy / long order [eg. /buy eth]
-/sell - Create a sell / short order[ eg. /sell eth]
+/sell - Create a sell / short order [eg. /sell eth]
 /close - Close all open orders [for specific pair /close eth]
 /openlimit - Get open limit orders
 /limitbuy - Create a buy / long limit order [eg. /limitbuy eth 2000]
 /limitsell - Create a sell / short limit order [eg. /limitsell eth 5000]
-/closelimit - Close all limit orders
+/closelimit - Close all limit orders [for specific pair /closelimit eth]
 /alert - Forward TV alerts to this chat/chatroom
 
 My creator is @pawiromitchel 🤗
@@ -160,7 +160,8 @@ He's constantly teaching me new stuff, so be on the lookout for new functionalit
         }
 
         if (HELPER.checkText(text, 'closelimit')) {
-            await FTX.closeLimitOrders(API_CONNECTION)
+            let pair = text.split(' ');
+            await FTX.closeLimitOrders(API_CONNECTION, pair[1] ? pair[1] : '')
                 .then(() => bot.sendMessage(chatId, `✅ Closing Limit Orders`))
                 .catch(res => bot.sendMessage(chatId, `❌ ${res}`))
         }
