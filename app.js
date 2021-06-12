@@ -236,7 +236,7 @@ Profit: ${HELPER.calculateProfit(order.recentAverageOpenPrice, price, order.side
 - Options = Once per bar close
 - Webhook URL = http://31.220.56.175/hook
 - Give it any alert name
-- Message should be = {"chatId":${chatId},"type":"BUY or SELL","exchange":{{exchange}},"ticker":{{ticker}}}`)
+- Message should be = {"chatId":${chatId},"type":"BUY or SELL","exchange":"{{exchange}}","ticker":"{{ticker}}","reason":"Reason for this alert"}`)
         }
     } else if (!check.length > 0) {
         bot.sendMessage(chatId, `Bot not configured correctly, this is how you do it`);
@@ -253,8 +253,8 @@ app.post("/hook", (req, res) => {
     console.log('Webhook received', req.body);
     if (req.body.chatId) {
         const order = req.body;
-        bot.sendMessage(order.chatId, `Webhook received:
-${order.type} ${order.ticker} on ${order.exchange}`)
+        bot.sendMessage(order.chatId, `✅ Webhook received:
+${order.type} signal for ${order.ticker} on ${order.exchange}\nReason: ${order.reason}`)
     }
     res.status(200).end()
 })
