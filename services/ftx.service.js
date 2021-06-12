@@ -95,8 +95,12 @@ async function openLimitOrders(API_CONNECTION) {
 /**
  * This function will first get all positions, filter through them and close them all
  */
-async function closeOrders(API_CONNECTION) {
+async function closeOrders(API_CONNECTION, pair = '') {
     let onlyPositionsWithSize = await openOrders(API_CONNECTION);
+
+    if (pair) {
+        onlyPositionsWithSize = onlyPositionsWithSize.filter(position => position.future.toLowerCase().includes(pair.toLowerCase()))
+    }
 
     if (onlyPositionsWithSize.length > 0) {
         onlyPositionsWithSize.forEach(position => {

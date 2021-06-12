@@ -206,32 +206,45 @@ Profit: ${HELPER.calculateProfit(order.recentAverageOpenPrice, price, order.side
         }
 
         if (HELPER.checkText(text, 'close')) {
+            let args = text.split(' ');
             let orders = await FTX.openOrders(API_CONNECTION);
             if (orders.length > 0) {
                 bot.sendMessage(chatId, `::Closing Orders::`);
+                if (args[1]) {
+                    orders = orders.filter(position => position.future.toLowerCase().includes(args[1].toLowerCase()))
+                    console.log(orders);
+                    if (orders.length === 0) bot.sendMessage(chatId, `❌ Can't find ${args[1]}`);
+                }
+
                 orders.forEach(async order => {
                     let price = await FTX.getPrice(API_CONNECTION, order.future);
                     bot.sendMessage(chatId, `
-    Closing ${order.side.toUpperCase()} ${order.future}
-    Funding Rate: ${await FTX.fundingRate(API_CONNECTION, order.future)}
-    
-    AvgPrice: $${order.recentAverageOpenPrice.toFixed(2)}
-    Size: ${order.size}
-    Liq Price: $${order.estimatedLiquidationPrice.toFixed(2)}
-    
-    PnL Today: $${order.realizedPnl.toFixed(2)}
-    MarkPrice: $${price}
-    Profit: ${HELPER.calculateProfit(order.recentAverageOpenPrice, price, order.side)}%
+Closing ${order.side.toUpperCase()} ${order.future}
+Funding Rate: ${await FTX.fundingRate(API_CONNECTION, order.future)}
+
+AvgPrice: $${order.recentAverageOpenPrice.toFixed(2)}
+Size: ${order.size}
+Liq Price: $${order.estimatedLiquidationPrice.toFixed(2)}
+
+PnL Today: $${order.realizedPnl.toFixed(2)}
+MarkPrice: $${price}
+Profit: ${HELPER.calculateProfit(order.recentAverageOpenPrice, price, order.side)}%
                     `);
                 });
             } else {
                 bot.sendMessage(chatId, `No open orders`);
             }
-            FTX.closeOrders(API_CONNECTION);
+
+            // only exec when there's a pair given
+            if (args[1]) {
+                FTX.closeOrders(API_CONNECTION, args[1]);
+            } else {
+                FTX.closeOrders(API_CONNECTION);
+            }
         }
 
         if (HELPER.checkText(text, 'alert')) {
-            bot.sendMessage(chatId, `So, you want Tradingview alerts right? He's what you need to do:
+            bot.sendMessage(chatId, `So, you want Tradingview alerts right? 👀 He's what you need to do:
 - Set the condition of your indicator
 - Options = Once per bar close
 - Webhook URL = http://31.220.56.175/hook
