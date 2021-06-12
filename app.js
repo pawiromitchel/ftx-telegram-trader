@@ -107,10 +107,11 @@ Degen Mode: ${check[0].degen ? '✅' : '❌'}`
                 let size = check[0].orderSize ? check[0].orderSize : 100;
                 // if degen is true then increase size with 5x
                 let upSize = check[0].degen ? size * 5 : size;
+                let accountInfo = await FTX.getBalance(API_CONNECTION);
                 FTX.marketOrder(API_CONNECTION, upSize, pair, side)
                     .then(async () => {
                         // buy 0.01 ETH at $2800
-                        bot.sendMessage(chatId, `✅ ${side.toUpperCase()} $${upSize} ${pair} @ $${await FTX.getPrice(API_CONNECTION, pair)}`)
+                        bot.sendMessage(chatId, `✅ ${side.toUpperCase()} $${((upSize / 100) * accountInfo.collateral).toFixed(2)} ${pair} @ $${await FTX.getPrice(API_CONNECTION, pair)}`)
                     })
                     .catch(res => bot.sendMessage(chatId, `❌ ${res}`))
             } else {
@@ -134,9 +135,10 @@ Degen Mode: ${check[0].degen ? '✅' : '❌'}`
                 let size = check[0].orderSize ? check[0].orderSize : 100;
                 // if degen is true then increase size with 5x
                 let upSize = check[0].degen ? size * 5 : size;
+                let accountInfo = await FTX.getBalance(API_CONNECTION);
                 FTX.marketOrder(API_CONNECTION, upSize, pair, side, 'limit', price)
                     .then(async () => {
-                        bot.sendMessage(chatId, `✅ LIMIT ${side.toUpperCase()} $${upSize} ${pair} @ $${price}`)
+                        bot.sendMessage(chatId, `✅ LIMIT ${side.toUpperCase()} $${((upSize / 100) * accountInfo.collateral).toFixed(2)} ${pair} @ $${price}`)
                     })
                     .catch(res => bot.sendMessage(chatId, `❌ ${res}`))
             } else {
