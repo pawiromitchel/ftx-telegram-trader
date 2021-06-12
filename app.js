@@ -63,12 +63,25 @@ bot.on('message', async (msg) => {
         const API_CONNECTION = new FTXRest(check[0]);
 
         if (HELPER.checkText(text, 'info')) {
-            const size = check[0].orderSize ? check[0].orderSize : 100;
-            const upSize = check[0].degen ? size * 5 : size;
-            bot.sendMessage(chatId, `::Info::
-Order Size: ${upSize}% of collateral
-Degen Mode: ${check[0].degen ? '✅' : '❌'}`
-            );
+            bot.sendMessage(chatId, `Hello ${msg.from.first_name} 👋,
+What can I 😎 do for you?
+
+/info - Info about the bot
+/degen - Increase order by 5x
+/size - Edit your order size in % [eg. size 10]
+/balance - Get account balance
+/open - Get open orders
+/buy - Create a buy / long order [eg. /buy eth]
+/sell - Create a sell / short order[ eg. /sell eth]
+/close - Close all open orders [for specific pair /close eth]
+/openlimit - Get open limit orders
+/limitbuy - Create a buy / long limit order [eg. /limitbuy eth 2000]
+/limitsell - Create a sell / short limit order [eg. /limitsell eth 5000]
+/closelimit - Close all limit orders
+/alert - Forward TV alerts to this chat/chatroom
+
+My creator is @pawiromitchel 🤗
+He's constantly teaching me new stuff, so be on the lookout for new functionalities`);
         }
 
         if (HELPER.checkText(text, 'degen')) {
@@ -154,6 +167,8 @@ Degen Mode: ${check[0].degen ? '✅' : '❌'}`
 
         if (HELPER.checkText(text, 'balance')) {
             let accountInfo = await FTX.getBalance(API_CONNECTION);
+            const size = check[0].orderSize ? check[0].orderSize : 100;
+            const upSize = check[0].degen ? size * 5 : size;
             bot.sendMessage(chatId, `
 ::Balance::
 Collateral: $${(accountInfo.collateral).toFixed(2)}
@@ -161,6 +176,10 @@ Account Value: $${(accountInfo.totalAccountValue).toFixed(2)}
 Margin Fraction: ${(accountInfo.marginFraction * 100).toFixed(2)}%
 TotalPositionSize: $${(accountInfo.totalPositionSize).toFixed(2)}
 Leverage: ${accountInfo.leverage}
+
+::Settings::
+Order Size: ${upSize}% of collateral
+Degen Mode: ${check[0].degen ? '✅' : '❌'}
             `);
         }
 
