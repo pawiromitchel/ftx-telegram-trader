@@ -307,7 +307,7 @@ app.get("/", (req, res) => {
     res.status(200).send('silence is golden').end()
 })
 
-app.post("/hook", (req, res) => {
+app.post("/hook", async (req, res) => {
     console.log('Webhook received', req.body);
     if (req.body.chatId) {
         const order = req.body;
