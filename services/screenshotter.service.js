@@ -66,6 +66,9 @@ async function TVscreenshot(exchange, market, timeframe, theme = "dark") {
     await page.waitForSelector("#tradingview_31c43 > div");
     const selection = await page.$("#tradingview_31c43");
 
+    // delay to load everything
+    await page.waitForTimeout(1000);
+
     // 4. Take screenshot
     await selection.screenshot({
         path: name,
