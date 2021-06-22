@@ -17,12 +17,16 @@ async function TVscreenshot(exchange, market, timeframe, theme = "dark") {
     const name = `./screenshots/TV_${Date.now()}_${exchange}_${market}_${timeframe}.jpg`;
 
     // set the right timeframe
+    timeframe = timeframe.toUpperCase();
     switch (timeframe) {
         case "1h":
             timeframe = "60";
             break;
+        case "2h":
+            timeframe = "120";
+            break;
         case "4h":
-            timeframe = "60";
+            timeframe = "240";
             break;
         case "1d":
         case "daily":
