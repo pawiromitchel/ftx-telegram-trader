@@ -4,6 +4,7 @@ const CONFIG = require('./config/config');
 const DB = require('./services/data.service');
 const HELPER = require('./services/helper.service');
 const FTX = require('./services/ftx.service');
+const SS = require('./services/screenshotter.service')
 const express = require("express")
 const app = express()
 // To parse the incoming requests with JSON payloads
@@ -271,7 +272,29 @@ Profit: ${HELPER.calculateProfit(order.recentAverageOpenPrice, price, order.side
 - Options = Once per bar close
 - Webhook URL = http://31.220.56.175/hook
 - Give it any alert name
-- Message should be = {"chatId":${chatId},"type":"BUY or SELL","exchange":"{{exchange}}","ticker":"{{ticker}}","reason":"Reason for this alert"}`)
+- Message should be = {"chatId":${chatId},"type":"BUY or SELL","exchange":"{{exchange}}","ticker":"{{ticker}}","timeframe":"{{interval}}","reason":"Reason for this alert"}`)
+        }
+
+        if (HELPER.checkText(text, 'ss')) {
+            let args = text.split(' ');
+            if (args[1]) {
+                bot.sendMessage(chatId, `Aight G 😉, getting data ...`)
+                    .then((chat) => {
+                        setTimeout(() => {
+                            bot.deleteMessage(chatId, chat.message_id)
+                        }, 10 * 1000) // 10 sec
+                    })
+                    .catch(err => console.log(err));
+
+                await SS.TVscreenshot(args[1], args[2], args[3])
+                    .then(photo => {
+                        bot.sendPhoto(chatId, photo, {
+                            caption: `✅ ${args[1].toUpperCase()}:${args[2].toUpperCase()} ${args[3]}`
+                        });
+                    })
+            } else {
+                bot.sendMessage(chatId, `❌ Yo, it's /ss ftx btcusd 1h. Got it? 😒`);
+            }
         }
     } else if (!check.length > 0) {
         bot.sendMessage(chatId, `Bot not configured correctly, this is how you do it`);
@@ -289,7 +312,15 @@ app.post("/hook", (req, res) => {
     if (req.body.chatId) {
         const order = req.body;
         bot.sendMessage(order.chatId, `✅ Webhook received:
-${order.type} signal for ${order.ticker} on ${order.exchange}\nReason: ${order.reason}`)
+${order.type} signal for ${order.ticker} on ${order.exchange}\nTimeframe: ${order.timeframe || "Not specified"}\nReason: ${order.reason || "Not specified"}`);
+
+        if(order.exchange && order.ticker && order.timeframe) {
+            await SS.TVscreenshot(order.exchange, order.ticker, order.timeframe)
+                .then(photo => bot.sendPhoto(order.chatId, photo))
+                .catch(() => bot.sendMessage(order.chatId, `❌ Couldn't make a screenshot`))
+        } else {
+            bot.sendMessage(order.chatId, `❌ Requirements not met, check /alert again`)
+        }
     }
     res.status(200).end()
 })
