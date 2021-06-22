@@ -80,6 +80,7 @@ What can I 😎 do for you?
 /limitsell - Create a sell / short limit order [eg. /limitsell eth 5000]
 /closelimit - Close all limit orders [for specific pair /closelimit eth]
 /alert - Forward TV alerts to this chat/chatroom
+/ss - Screenshot from Tradingview [/ss ftx ethusd 1h]
 
 My creator is @pawiromitchel 🤗
 He's constantly teaching me new stuff, so be on the lookout for new functionalities`);
