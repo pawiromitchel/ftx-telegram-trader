@@ -287,7 +287,7 @@ Profit: ${HELPER.calculateProfit(order.recentAverageOpenPrice, price, order.side
                     })
                     .catch(err => console.log(err));
 
-                await SS.TVscreenshot(args[1], args[2], args[3])
+                await SS.TVscreenshot(args[1], args[2], args[3] || 60)
                     .then(photo => {
                         bot.sendPhoto(chatId, photo, {
                             caption: `✅ ${args[1].toUpperCase()}:${args[2].toUpperCase()} ${args[3]}`
