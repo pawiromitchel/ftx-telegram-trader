@@ -51,6 +51,7 @@ bot.on('message', async (msg) => {
             if (!check.length > 0) {
                 DB.saveKey(record);
                 bot.sendMessage(chatId, `Keys saved, please call /balance to check if it's working correctly`)
+                check = await DB.getOne(chatId);
             } else {
                 bot.sendMessage(chatId, `I've detected a previous configured record of you, overwriting it with the current values`)
                 DB.overWriteKey(record);
