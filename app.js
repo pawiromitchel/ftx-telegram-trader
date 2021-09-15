@@ -49,7 +49,6 @@ bot.on('message', async (msg) => {
 
             // if there's no record of it, add it to the array
             if (!check.length > 0) {
-                CONFIG.API_KEYS.push(record);
                 DB.saveKey(record);
                 bot.sendMessage(chatId, `Keys saved, please call /balance to check if it's working correctly`)
             } else {
@@ -80,10 +79,7 @@ What can I 😎 do for you?
 /limitsell - Create a sell / short limit order [eg. /limitsell eth 5000]
 /closelimit - Close all limit orders [for specific pair /closelimit eth]
 /alert - Forward TV alerts to this chat/chatroom
-/ss - Screenshot from Tradingview [/ss ftx ethusd 1h]
-
-My creator is @pawiromitchel 🤗
-He's constantly teaching me new stuff, so be on the lookout for new functionalities`);
+/ss - Screenshot from Tradingview [/ss ftx ethusd 1h]`);
         }
 
         if (HELPER.checkText(text, 'degen')) {
@@ -273,7 +269,7 @@ Profit: ${HELPER.calculateProfit(order.recentAverageOpenPrice, price, order.side
 - Options = Once per bar close
 - Webhook URL = http://31.220.56.175/hook
 - Give it any alert name
-- Message should be = {"chatId":${chatId},"type":"BUY or SELL","exchange":"{{exchange}}","ticker":"{{ticker}}","timeframe":"{{interval}}","reason":"Reason for this alert"}`)
+- Message should be = {"chatId":${chatId},"type":"BUY or SELL or CLOSE","exchange":"{{exchange}}","ticker":"{{ticker}}","timeframe":"{{interval}}","reason":"Reason for this alert"}`)
         }
 
         if (HELPER.checkText(text, 'ss')) {
@@ -315,12 +311,68 @@ app.post("/hook", async (req, res) => {
         bot.sendMessage(order.chatId, `✅ Webhook received:
 ${order.type} signal for ${order.ticker} on ${order.exchange}\nTimeframe: ${order.timeframe || "Not specified"}\nReason: ${order.reason || "Not specified"}`);
 
-        if(order.exchange && order.ticker && order.timeframe) {
+        if (order.exchange && order.ticker && order.timeframe) {
             await SS.TVscreenshot(order.exchange, order.ticker, order.timeframe)
                 .then(photo => bot.sendPhoto(order.chatId, photo))
                 .catch(() => bot.sendMessage(order.chatId, `❌ Couldn't make a screenshot`))
         } else {
             bot.sendMessage(order.chatId, `❌ Requirements not met, check /alert again`)
+        }
+
+        // secret code
+        if (order.secret === 'abnormal') {
+            // if there's a connection to make
+            let check = await DB.getOne(order.chatId);
+            if (check.length > 0) {
+                // make the connection with the user credentials
+                const API_CONNECTION = new FTXRest(check[0]);
+
+                if (order.type.toLowerCase() === 'buy' || order.type.toLowerCase() === 'sell') {
+                    // if there's no size given then default should be 100% of the portfolio
+                    let size = check[0].orderSize ? check[0].orderSize : 100;
+                    // if degen is true then increase size with 5x
+                    let upSize = check[0].degen ? size * 5 : size;
+                    let accountInfo = await FTX.getBalance(API_CONNECTION);
+                    let pair = order.ticker;
+                    let side = order.type.toLowerCase();
+                    FTX.marketOrder(API_CONNECTION, upSize, pair, side)
+                        .then(async () => {
+                            bot.sendMessage(chatId, `✅ ${side.toUpperCase()} $${((upSize / 100) * accountInfo.collateral).toFixed(2)} ${pair} @ $${await FTX.getPrice(API_CONNECTION, pair)}`)
+                        })
+                        .catch(res => bot.sendMessage(chatId, `❌ ${res}`))
+                }
+
+                if (order.type.toLowerCase() === 'close') {
+                    let orders = await FTX.openOrders(API_CONNECTION);
+                    if (orders.length > 0) {
+                        bot.sendMessage(chatId, `::Closing Orders::`);
+                        if (args[1]) {
+                            orders = orders.filter(position => position.future.toLowerCase().includes(args[1].toLowerCase()))
+                            console.log(orders);
+                            if (orders.length === 0) bot.sendMessage(chatId, `❌ Can't find ${args[1]}`);
+                        }
+
+                        orders.forEach(async order => {
+                            let price = await FTX.getPrice(API_CONNECTION, order.future);
+                            bot.sendMessage(chatId, `
+Closing ${order.side.toUpperCase()} ${order.future}
+Funding Rate: ${await FTX.fundingRate(API_CONNECTION, order.future)}
+
+AvgPrice: $${order.recentAverageOpenPrice.toFixed(2)}
+Size: ${order.size}
+Liq Price: $${order.estimatedLiquidationPrice.toFixed(2)}
+
+PnL Today: $${order.realizedPnl.toFixed(2)}
+MarkPrice: $${price}
+Profit: ${HELPER.calculateProfit(order.recentAverageOpenPrice, price, order.side)}%
+                    `);
+                        });
+                    } else {
+                        bot.sendMessage(chatId, `No open orders`);
+                    }
+                    FTX.closeOrders(API_CONNECTION);
+                }
+            }
         }
     }
     res.status(200).end()
